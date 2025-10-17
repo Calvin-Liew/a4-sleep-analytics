@@ -581,10 +581,234 @@ body {
   color: var(--text);
 }
 
+/* ======== Dream Lab (BMI × HR × Sleep Disorders) ======== */
+.dreamlab-section {
+    background: linear-gradient(180deg, var(--bg-elevated), rgba(22, 27, 34, 0.7));
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 48px 32px;
+    margin-top: 80px;
+    position: relative;
+    overflow: hidden;
+}
+
+.dreamlab-section::after {
+    /* faint moving stars */
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+            radial-gradient(2px 2px at 20% 30%, rgba(255,255,255,0.06) 0, transparent 60%),
+            radial-gradient(2px 2px at 80% 10%, rgba(255,255,255,0.05) 0, transparent 60%),
+            radial-gradient(2px 2px at 60% 70%, rgba(255,255,255,0.04) 0, transparent 60%),
+            radial-gradient(2px 2px at 10% 80%, rgba(255,255,255,0.05) 0, transparent 60%);
+    animation: dlStars 28s linear infinite;
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+@keyframes dlStars {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(8px); }
+    100% { transform: translateY(0px); }
+}
+
+.dreamlab-controls {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(180px, 1fr));
+    gap: 16px;
+    margin: 22px auto 28px;
+    max-width: 1200px;
+}
+
+.dl-control {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.dl-control label {
+    font-size: 0.78rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    font-weight: 700;
+}
+
+.dl-range {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.dl-range input[type="number"] {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    color: var(--text);
+}
+
+#dl-speed {
+    width: 100%;
+}
+
+.dl-toggle {
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.dl-toggle-label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+/* pretty switch */
+.dl-switch {
+    position: relative;
+    display: inline-block;
+    width: 52px;
+    height: 28px;
+}
+.dl-switch input { display: none; }
+.dl-slider {
+    position: absolute; cursor: pointer; inset: 0;
+    background: #2a2f36; border-radius: 28px; transition: .3s;
+    border: 1px solid var(--card-border);
+}
+.dl-slider:before {
+    content: ""; position: absolute; height: 20px; width: 20px; left: 4px; top: 3px;
+    background: var(--text); border-radius: 50%; transition: .3s;
+}
+.dl-switch input:checked + .dl-slider { background: var(--accent-muted); }
+.dl-switch input:checked + .dl-slider:before { transform: translateX(24px); }
+
+.dreamlab-viz {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    min-height: 560px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+.dreamlab-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px 22px;
+    align-items: center;
+    margin: 16px auto 6px;
+    max-width: 1100px;
+    color: var(--text-secondary);
+}
+
+.dl-leg-item .dot {
+    display: inline-block; width: 10px; height: 10px; margin-right: 8px; border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.2);
+}
+.dl-none { background: #8b949e; }
+.dl-insomnia { background: #7c4dff; }
+.dl-apnea { background: #f85149; }
+.dl-narco { background: #ffd43b; }
+.dl-rls { background: #3fb950; }
+
+.dreamlab-footnote {
+    color: var(--text-tertiary);
+    text-align: center;
+    margin-top: 10px;
+    font-size: 0.92rem;
+    font-style: italic;
+}
+
+/* Dream Lab axes and dots */
+.dl-axis text { fill: var(--text); font-size: 12px; font-weight: 600; }
+
+.dl-axis path, .dl-axis line { stroke: var(--card-border); }
+.dl-axis-label { fill: var(--text); font-size: 12px; font-weight: 600; letter-spacing: .5px; }
+
+.dl-dot {
+    stroke: rgba(0,0,0,0.6);
+    stroke-width: 1.2px;
+    opacity: 0.9;
+    cursor: pointer;
+    filter: drop-shadow(0 0 4px rgba(0,0,0,0.4));
+    transition: opacity .2s ease;
+}
+.dl-dot:hover { opacity: 1; }
+
+.dl-tooltip {
+    position: absolute;
+    background: var(--card-bg);
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    padding: 12px 14px;
+    color: var(--text);
+    font-size: 12px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .15s ease;
+    z-index: 1000;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+}
+
+.dl-tooltip.visible { opacity: 1; }
+/* Ensure axes/labels sit above the canvases */
+.dreamlab-viz svg { position: relative; z-index: 2; }
+.dl-layer-canvas { z-index: 0; }
+.dl-zzz-canvas   { z-index: 1; }
+
+/* responsive */
+@media (max-width: 1100px) {
+    .dreamlab-controls { grid-template-columns: repeat(2, minmax(180px, 1fr)); }
+}
+@media (max-width: 768px) {
+    .dreamlab-controls { grid-template-columns: 1fr; }
+}
+
+
 @media (max-width: 1400px) {
   .visualization-container {
     grid-template-columns: 1fr 340px;
   }
+}
+/* ===== Dream Lab v2 effects ===== */
+.dl-controls-2 { margin-top: -6px; }
+
+.dl-chiprow { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.dl-chip { display: inline-flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.02);
+    border: 1px solid var(--card-border); border-radius: 999px; padding: 8px 12px; }
+.dl-chip input { width: 16px; height: 16px; accent-color: var(--accent); }
+.dl-chip label { font-size: .9rem; color: var(--text-secondary); cursor: pointer; }
+
+.dl-note { display:flex; align-items:center; font-size:.85rem; color:var(--text-tertiary); }
+
+/* Canvas layers inside Dream Lab */
+.dl-layer-canvas, .dl-zzz-canvas {
+    position: absolute; inset: 0; pointer-events: none;
+}
+
+.dl-link { stroke: rgba(255,255,255,0.22); stroke-width: 1.2px; stroke-linecap: round; }
+.dl-link.insomnia { stroke: #7c4dff88; }
+.dl-link.apnea    { stroke: #f8514988; }
+.dl-link.none     { stroke: #8b949e88; }
+.dl-link.narco    { stroke: #ffd43b88; }
+.dl-link.rls      { stroke: #3fb95088; }
+
+.dl-dot-halo { fill: none; stroke-width: 6; opacity: .18; filter: blur(1.5px); }
+.dl-dot-ring { fill: none; stroke-width: 1.1px; opacity: .65; }
+
+.dl-density { fill: url(#dlRadial); opacity: .18; mix-blend-mode: screen; }
+
+.dreamlab-viz.deep-sleep {
+    box-shadow: 0 0 0 1px rgba(88,166,255,0.1), inset 0 0 80px rgba(0,0,0,0.5);
+    background: linear-gradient(180deg, #0c1117, #0a0d12 65%);
 }
 
 @media (max-width: 1100px) {

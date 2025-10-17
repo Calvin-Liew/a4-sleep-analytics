@@ -216,6 +216,104 @@
           </div>
         </div>
       </div>
+        <!-- =========================
+             Chapter III: Dream Lab
+             ========================= -->
+        <div class="story-section dreamlab-section">
+            <div class="chapter-label">Chapter III: Dream Lab</div>
+            <div class="section-header">
+                <h2>Sleep, Body, Pulse — A Biometrics Nightscape</h2>
+                <p class="section-description">
+                    Explore how <strong>BMI</strong> and <strong>Heart Rate</strong> flow together across
+                    different <strong>sleep disorders</strong>. The particles below drift like thoughts before sleep:
+                    color encodes disorder, horizontal position encodes BMI, vertical position encodes heart rate.
+                    Use the controls to filter and tune the motion.
+                </p>
+            </div>
+
+            <div class="dreamlab-controls">
+                <div class="dl-control">
+                    <label for="dl-disorder">Disorder</label>
+                    <select id="dl-disorder">
+                        <option value="__ALL__">All</option>
+                        <option value="Insomnia">Insomnia</option>
+                        <option value="Sleep Apnea">Sleep Apnea</option>
+                        <option value="Narcolepsy">Narcolepsy</option>
+                        <option value="Restless Leg Syndrome">Restless Leg Syndrome</option>
+                        <option value="None">None</option>
+                    </select>
+                </div>
+                <div class="dl-control">
+                    <label>BMI Category</label>
+                    <div id="dl-bmi-cats" class="dl-chiprow">
+                        <!-- JS will populate chips from data (Underweight, Normal, Overweight, Obese) -->
+                    </div>
+                </div>
+
+
+
+                <div class="dl-control">
+                    <label for="dl-hr">Heart Rate (bpm)</label>
+                    <div class="dl-range">
+                        <input id="dl-hr-min" type="number" step="1" value="30" />
+                        <span>to</span>
+                        <input id="dl-hr-max" type="number" step="1" value="120" />
+                    </div>
+                </div>
+
+                <div class="dl-control">
+                    <label for="dl-speed">Drift Speed</label>
+                    <input id="dl-speed" type="range" min="0" max="1" step="0.01" value="0.35" />
+                </div>
+
+                <div class="dl-control dl-toggle">
+                    <label class="dl-switch">
+                        <input id="dl-pulse" type="checkbox" checked />
+                        <span class="dl-slider"></span>
+                    </label>
+                    <span class="dl-toggle-label">Heartbeat Pulse</span>
+                </div>
+            </div>
+            <!-- Extra effects controls -->
+            <div class="dreamlab-controls dl-controls-2">
+                <div class="dl-control dl-chiprow">
+                    <div class="dl-chip">
+                        <input id="dl-trails" type="checkbox" checked />
+                        <label for="dl-trails">Motion Trails</label>
+                    </div>
+                    <div class="dl-chip">
+                        <input id="dl-constellations" type="checkbox" />
+                        <label for="dl-constellations">Constellations</label>
+                    </div>
+                    <div class="dl-chip">
+                        <input id="dl-density" type="checkbox" />
+                        <label for="dl-density">Density Aura</label>
+                    </div>
+                    <div class="dl-chip">
+                        <input id="dl-deepsleep" type="checkbox" />
+                        <label for="dl-deepsleep">Deep Sleep Mode</label>
+                    </div>
+                </div>
+                <div class="dl-control dl-note">
+                    Subtle effects; turn off trails if your laptop spins up.
+                </div>
+            </div>
+
+            <div id="dreamLab" class="dreamlab-viz"></div>
+
+            <div class="dreamlab-legend">
+                <div class="dl-leg-item"><span class="dot dl-none"></span> None</div>
+                <div class="dl-leg-item"><span class="dot dl-insomnia"></span> Insomnia</div>
+                <div class="dl-leg-item"><span class="dot dl-apnea"></span> Sleep Apnea</div>
+                <div class="dl-leg-item"><span class="dot dl-narco"></span> Narcolepsy</div>
+                <div class="dl-leg-item"><span class="dot dl-rls"></span> Restless Leg</div>
+            </div>
+
+            <p class="dreamlab-footnote">
+                Horizontal axis: BMI → higher to the right. Vertical axis: Heart Rate (bpm) → higher at the top.
+                Colors denote sleep disorder status. Particles gently drift to evoke drowsy pre-sleep motion.
+            </p>
+        </div>
 
       <footer class="story-footer">
         <p>
