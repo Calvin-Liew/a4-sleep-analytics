@@ -32,6 +32,13 @@ body {
   line-height: 1.6;
 }
 
+.flow-container {
+    /* Definiert das Grid: FlowViz (links, flexibel) | Detail Panel (rechts, feste Breite) */
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 30px;
+    margin-top: 40px; /* Fügt Abstand zur darüber liegenden Bubble-Chart Sektion hinzu */
+}
 .container {
   max-width: 1600px;
   margin: 0 auto;
@@ -585,12 +592,18 @@ body {
   .visualization-container {
     grid-template-columns: 1fr 340px;
   }
+    .flow-container {
+        grid-template-columns: 1fr 340px;
+    }
 }
 
 @media (max-width: 1100px) {
   .visualization-container {
     grid-template-columns: 1fr;
   }
+    .flow-container {
+        grid-template-columns: 1fr 340px;
+    }
 
   .sidebar {
     flex-direction: row;
@@ -647,10 +660,27 @@ body {
   #mainViz {
     min-height: 500px;
   }
+    #flowViz {
+        /* Behält die allgemeinen Styles bei */
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 12px;
+        min-height: 550px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 
+        /* Entfernt margin-top, da es nun im flow-container ist */
+        margin-top: 0;
+
+        /* WICHTIG: Stellt sicher, dass es die erste Spalte im Grid belegt */
+        grid-column: 1 / 2;
+    }
   .insights-section {
     padding: 40px 20px;
   }
+
+
 
   .insights-grid {
     grid-template-columns: 1fr;
