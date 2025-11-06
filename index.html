@@ -233,7 +233,60 @@
             represents the number of people following that path.
           </p>
         </div>
+          <h3>Sankey Legend</h3>
+          <div class="sankey-legend" style="margin-top: 30px">
 
+              <div class="legend-inline">
+              <!-- Activity (gradient) -->
+                  <div class="legend-section">
+                      <div class="legend-title">Activity Level (source)</div>
+                      <svg width="280" height="54" aria-label="Activity level gradient">
+                          <defs>
+                              <linearGradient id="grad-activity" x1="0%" x2="100%" y1="0%" y2="0%">
+                                  <stop offset="0%" stop-color="#ef4444"></stop>
+                                  <stop offset="50%" stop-color="#f59e0b"></stop>
+                                  <stop offset="100%" stop-color="#22c55e"></stop>
+                              </linearGradient>
+                          </defs>
+                          <rect x="10" y="20" width="220" height="12" rx="6" fill="url(#grad-activity)"></rect>
+                          <text x="10" y="16" style="font-size: 11px; fill: #9aa5b1">Low</text>
+                          <text x="120" y="16" style="font-size: 11px; fill: #9aa5b1" text-anchor="middle">Medium</text>
+                          <text x="230" y="16" style="font-size: 11px; fill: #9aa5b1" text-anchor="end">High</text>
+                      </svg>
+                  </div>
+
+                  <!-- Sleep Quality (gradient) -->
+                  <div class="legend-section" style="margin-top: 8px">
+                      <div class="legend-title">Sleep Quality Bucket (target)</div>
+                      <svg width="280" height="54" aria-label="Sleep quality gradient">
+                          <defs>
+                              <linearGradient id="grad-sleep" x1="0%" x2="100%" y1="0%" y2="0%">
+                                  <stop offset="0%" stop-color="#b91c1c"></stop>
+                                  <stop offset="50%" stop-color="#a16207"></stop>
+                                  <stop offset="100%" stop-color="#0f766e"></stop>
+                              </linearGradient>
+                          </defs>
+                          <rect x="10" y="20" width="220" height="12" rx="6" fill="url(#grad-sleep)"></rect>
+                          <text x="10" y="16" style="font-size: 11px; fill: #9aa5b1">Poor (5–6)</text>
+                          <text x="120" y="16" style="font-size: 11px; fill: #9aa5b1" text-anchor="middle">Average (7)</text>
+                          <text x="230" y="16" style="font-size: 11px; fill: #9aa5b1" text-anchor="end">Good (8–10)</text>
+                      </svg>
+                  </div>
+
+                  <!-- Width meaning -->
+                  <div class="legend-section" style="margin-top: 8px">
+                      <div class="legend-title">Line width = number of people</div>
+                      <svg width="280" height="54" aria-label="Width equals people">
+                          <line x1="10" x2="50" y1="12" y2="12" stroke="#94a3b8" stroke-width="3" stroke-linecap="round"></line>
+                          <text x="270" y="14" text-anchor="end" style="font-size: 11px; fill: #cbd3eb">few</text>
+                          <line x1="10" x2="120" y1="28" y2="28" stroke="#94a3b8" stroke-width="7" stroke-linecap="round"></line>
+                          <text x="270" y="30" text-anchor="end" style="font-size: 11px; fill: #cbd3eb">more</text>
+                          <line x1="10" x2="230" y1="44" y2="44" stroke="#94a3b8" stroke-width="12" stroke-linecap="round"></line>
+                          <text x="270" y="46" text-anchor="end" style="font-size: 11px; fill: #cbd3eb">many people</text>
+                      </svg>
+                  </div>
+              </div>
+              </div>
         <div class="flow-container">
           <div id="flowViz"></div>
 
@@ -243,172 +296,6 @@
               <div id="detailContentFlow"></div>
             </div>
 
-            <div class="guide-panel" style="margin-top: 30px">
-              <h3 style="margin-bottom: 12px">Sankey Legend</h3>
-
-              <!-- Activity (gradient) -->
-              <div class="legend-section" style="margin-top: 6px">
-                <div class="legend-title">Activity Level (source)</div>
-                <svg
-                  width="280"
-                  height="54"
-                  aria-label="Activity level gradient"
-                >
-                  <defs>
-                    <!-- Low (#ef4444) → Medium (#f59e0b) → High (#22c55e) -->
-                    <linearGradient
-                      id="grad-activity"
-                      x1="0%"
-                      x2="100%"
-                      y1="0%"
-                      y2="0%"
-                    >
-                      <stop offset="0%" stop-color="#ef4444"></stop>
-                      <stop offset="50%" stop-color="#f59e0b"></stop>
-                      <stop offset="100%" stop-color="#22c55e"></stop>
-                    </linearGradient>
-                  </defs>
-                  <rect
-                    x="10"
-                    y="20"
-                    width="220"
-                    height="12"
-                    rx="6"
-                    fill="url(#grad-activity)"
-                  ></rect>
-                  <text x="10" y="16" style="font-size: 11px; fill: #9aa5b1">
-                    Low
-                  </text>
-                  <text
-                    x="120"
-                    y="16"
-                    style="font-size: 11px; fill: #9aa5b1"
-                    text-anchor="middle"
-                  >
-                    Medium
-                  </text>
-                  <text
-                    x="230"
-                    y="16"
-                    style="font-size: 11px; fill: #9aa5b1"
-                    text-anchor="end"
-                  >
-                    High
-                  </text>
-                </svg>
-              </div>
-
-              <!-- Sleep Quality (gradient) -->
-              <div class="legend-section" style="margin-top: 14px">
-                <div class="legend-title">Sleep Quality Bucket (target)</div>
-                <svg
-                  width="280"
-                  height="54"
-                  aria-label="Sleep quality gradient"
-                >
-                  <defs>
-                    <!-- Poor (#b91c1c) → Average (#a16207) → Good (#0f766e) -->
-                    <linearGradient
-                      id="grad-sleep"
-                      x1="0%"
-                      x2="100%"
-                      y1="0%"
-                      y2="0%"
-                    >
-                      <stop offset="0%" stop-color="#b91c1c"></stop>
-                      <stop offset="50%" stop-color="#a16207"></stop>
-                      <stop offset="100%" stop-color="#0f766e"></stop>
-                    </linearGradient>
-                  </defs>
-                  <rect
-                    x="10"
-                    y="20"
-                    width="220"
-                    height="12"
-                    rx="6"
-                    fill="url(#grad-sleep)"
-                  ></rect>
-                  <text x="10" y="16" style="font-size: 11px; fill: #9aa5b1">
-                    Poor (5–6)
-                  </text>
-                  <text
-                    x="120"
-                    y="16"
-                    style="font-size: 11px; fill: #9aa5b1"
-                    text-anchor="middle"
-                  >
-                    Average (7)
-                  </text>
-                  <text
-                    x="230"
-                    y="16"
-                    style="font-size: 11px; fill: #9aa5b1"
-                    text-anchor="end"
-                  >
-                    Good (8–10)
-                  </text>
-                </svg>
-              </div>
-
-              <!-- Width meaning -->
-              <div class="legend-section" style="margin-top: 8px">
-                <div class="legend-title">Line width = number of people</div>
-                <svg width="280" height="54" aria-label="Width equals people">
-                  <line
-                    x1="10"
-                    x2="50"
-                    y1="12"
-                    y2="12"
-                    stroke="#94a3b8"
-                    stroke-width="3"
-                    stroke-linecap="round"
-                  ></line>
-                  <text
-                    x="270"
-                    y="14"
-                    text-anchor="end"
-                    style="font-size: 11px; fill: #cbd3eb"
-                  >
-                    few
-                  </text>
-
-                  <line
-                    x1="10"
-                    x2="120"
-                    y1="28"
-                    y2="28"
-                    stroke="#94a3b8"
-                    stroke-width="7"
-                    stroke-linecap="round"
-                  ></line>
-                  <text
-                    x="270"
-                    y="30"
-                    text-anchor="end"
-                    style="font-size: 11px; fill: #cbd3eb"
-                  >
-                    more
-                  </text>
-
-                  <line
-                    x1="10"
-                    x2="230"
-                    y1="44"
-                    y2="44"
-                    stroke="#94a3b8"
-                    stroke-width="12"
-                    stroke-linecap="round"
-                  ></line>
-                  <text
-                    x="270"
-                    y="46"
-                    text-anchor="end"
-                    style="font-size: 11px; fill: #cbd3eb"
-                  >
-                    many people
-                  </text>
-                </svg>
-              </div>
             </div>
           </div>
         </div>

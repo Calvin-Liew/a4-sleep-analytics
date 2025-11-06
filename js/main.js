@@ -772,148 +772,265 @@ function buildSankeyGraph(rows) {
   }));
   return { nodes, links };
 }
-
 function renderSankey(graph) {
-  const host = d3.select("#flowViz");
-  host.selectAll("*").remove();
+    const host = d3.select("#flowViz");
+    host.selectAll("*").remove();
 
-  const width = host.node().getBoundingClientRect().width || 900;
-  const height = Math.max(520, Math.round(width * 0.55));
+    const width = host.node().getBoundingClientRect().width || 900;
+    const height = Math.max(520, Math.round(width * 0.55));
 
-  const svg = host.append("svg").attr("width", width).attr("height", height);
+    const svg = host.append("svg").attr("width", width).attr("height", height);
 
-  const sankey = d3
-    .sankey()
-    .nodeWidth(18)
-    .nodePadding(12)
-    .extent([
-      [16, 16],
-      [width - 16, height - 16],
-    ]);
-  const { nodes, links } = sankey({
-    nodes: graph.nodes.map((d) => ({ ...d })),
-    links: graph.links.map((d) => ({ ...d })),
-  });
+    const sankey = d3
+        .sankey()
+        .nodeWidth(18)
+        .nodePadding(12)
+        .extent([
+            [16, 16],
+            [width - 16, height - 16],
+        ]);
 
-  svg
-    .append("g")
-    .attr("fill", "none")
-    .selectAll("path")
-    .data(links)
-    .join("path")
-    .attr("d", d3.sankeyLinkHorizontal())
-    .attr("stroke", (d) => flowColorScale(nodes[d.source.index].name))
-    .attr("stroke-width", (d) => Math.max(1, d.width))
-    .attr("stroke-opacity", 0.28)
-    .style("cursor", "pointer")
-    .on("mousemove", (ev, d) => showTooltip(ev, d, "flow"))
-    .on("mouseleave", hideTooltip)
-    .on("click", (ev, d) => {
-      svg.selectAll("path").attr("stroke-opacity", 0.28);
-      d3.select(ev.currentTarget).attr("stroke-opacity", 0.85);
-      updateFlowDetailPanel(d, { nodes, links });
+    const { nodes, links } = sankey({
+        nodes: graph.nodes.map((d) => ({ ...d })),
+        links: graph.links.map((d) => ({ ...d })),
     });
 
-  svg
-    .append("g")
-    .selectAll("rect")
-    .data(nodes)
-    .join("rect")
-    .attr("x", (d) => d.x0)
-    .attr("y", (d) => d.y0)
-    .attr("width", (d) => d.x1 - d.x0)
-    .attr("height", (d) => d.y1 - d.y0)
-    .attr("fill", (d) => d3.color(flowColorScale(d.name)))
-    .attr("stroke", (d) => d3.color(flowColorScale(d.name)).darker(0.7));
+    // === Neuer: Selektion & Tooltip-Delay ===
+    let selected = new Set(); // enthält Indizes ausgewählter Links
+    let flowTtpTimer = null;
 
-  svg
-    .append("g")
-    .style("font", "12px DM Sans, system-ui, sans-serif")
-    .selectAll("text")
-    .data(nodes)
-    .join("text")
-    .attr("x", (d) => (d.x0 < width / 2 ? d.x1 + 6 : d.x0 - 6))
-    .attr("y", (d) => (d.y0 + d.y1) / 2)
-    .attr("dy", "0.35em")
-    .attr("text-anchor", (d) => (d.x0 < width / 2 ? "start" : "end"))
-    .attr("fill", "#cbd3eb")
-    .text((d) => `${d.name} (${d.value})`);
+    const gLinks = svg.append("g");
+    const gLinkOutlines = gLinks.append("g"); // Outline-Schicht
+    const gLinkColors = gLinks.append("g");   // Farbschicht oben
 
-  svg
-    .append("rect")
-    .attr("x", 8)
-    .attr("y", 8)
-    .attr("width", width - 16)
-    .attr("height", height - 16)
-    .attr("rx", 12)
-    .attr("fill", "none")
-    .attr("stroke", "#30363d");
+    // --- Outline-Pfade (erhöht Kontrast bei Überlappungen) ---
+    const outlines = gLinkOutlines
+        .selectAll("path")
+        .data(links)
+        .join("path")
+        .attr("class", "sankey-link-outline")
+        .attr("d", d3.sankeyLinkHorizontal())
+        .attr("stroke", "#0d1117")              // dunkler Hintergrund-Ton
+        .attr("stroke-width", (d) => Math.max(1, d.width) + 4) // minimal breiter
+        .attr("stroke-opacity", 0.85)
+        .attr("fill", "none");
 
-  d3.select("#detailPanelFlow")
-    .classed("hidden", true)
-    .select("#detailTitleFlow")
-    .text("Select an element to see details");
-  d3.select("#detailContentFlow").html("");
+    // --- Farbpunkte (eigentliche Links) ---
+    const paths = gLinkColors
+        .selectAll("path")
+        .data(links)
+        .join("path")
+        .attr("class", "sankey-link")
+        .attr("d", d3.sankeyLinkHorizontal())
+        .attr("stroke", (d) => flowColorScale(nodes[d.source.index].name))
+        .attr("stroke-width", (d) => Math.max(1, d.width))
+        .attr("stroke-opacity", 0.28)
+        .attr("fill", "none")
+        .style("cursor", "pointer")
+        .on("mousemove", (ev, d) => {
+            if (flowTtpTimer) {
+                clearTimeout(flowTtpTimer);
+                flowTtpTimer = null;
+            }
+            showTooltip(ev, d, "flow");
+        })
+        .on("mouseleave", () => {
+            // Tooltip verschwindet verzögert (persistenter Effekt)
+            flowTtpTimer = setTimeout(() => hideTooltip(), 700);
+        })
+        .on("click", (ev, d) => {
+            // Toggle Auswahl
+            const idx = links.indexOf(d);
+            if (selected.has(idx)) selected.delete(idx);
+            else selected.add(idx);
+
+            updateLinkAppearance();
+            // Update Detail-Panel: einzelne Auswahl ODER mehrere
+            const selLinks = Array.from(selected).map((i) => links[i]);
+            updateFlowDetailPanel(selLinks.length ? selLinks : d, { nodes, links });
+
+            ev.stopPropagation();
+        });
+
+    // Knoten & Labels (unverändert)
+    svg
+        .append("g")
+        .selectAll("rect")
+        .data(nodes)
+        .join("rect")
+        .attr("x", (d) => d.x0)
+        .attr("y", (d) => d.y0)
+        .attr("width", (d) => d.x1 - d.x0)
+        .attr("height", (d) => d.y1 - d.y0)
+        .attr("fill", (d) => d3.color(flowColorScale(d.name)))
+        .attr("stroke", (d) => d3.color(flowColorScale(d.name)).darker(0.7));
+
+    svg
+        .append("g")
+        .style("font", "12px DM Sans, system-ui, sans-serif")
+        .selectAll("text")
+        .data(nodes)
+        .join("text")
+        .attr("x", (d) => (d.x0 < width / 2 ? d.x1 + 6 : d.x0 - 6))
+        .attr("y", (d) => (d.y0 + d.y1) / 2)
+        .attr("dy", "0.35em")
+        .attr("text-anchor", (d) => (d.x0 < width / 2 ? "start" : "end"))
+        .attr("fill", "#cbd3eb")
+        .text((d) => `${d.name} (${d.value})`);
+
+    svg
+        .append("rect")
+        .attr("x", 8)
+        .attr("y", 8)
+        .attr("width", width - 16)
+        .attr("height", height - 16)
+        .attr("rx", 12)
+        .attr("fill", "none")
+        .attr("stroke", "#30363d");
+
+    // Klick auf freie Fläche: Auswahl zurücksetzen
+    svg.on("click", () => {
+        if (selected.size) {
+            selected.clear();
+            updateLinkAppearance();
+            d3.select("#detailPanelFlow")
+                .classed("hidden", true)
+                .select("#detailTitleFlow")
+                .text("Select an element to see details");
+            d3.select("#detailContentFlow").html("");
+        }
+    });
+
+    d3.select("#detailPanelFlow")
+        .classed("hidden", true)
+        .select("#detailTitleFlow")
+        .text("Select an element to see details");
+    d3.select("#detailContentFlow").html("");
+
+    // --- Aussehen abhängig von Auswahl-Zustand (inkl. Transition) ---
+    function updateLinkAppearance() {
+        const hasSel = selected.size > 0;
+
+        outlines
+            .transition()
+            .duration(250)
+            .attr("stroke-opacity", (d, i) =>
+                hasSel ? (selected.has(i) ? 0.95 : 0.15) : 0.85
+            );
+
+        paths
+            .transition()
+            .duration(250)
+            .attr("stroke-opacity", (d, i) =>
+                hasSel ? (selected.has(i) ? 0.9 : 0.08) : 0.28
+            );
+    }
 }
 
-function updateFlowDetailPanel(linkData, graph) {
-  const src = graph.nodes[linkData.source.index].name;
-  const tgt = graph.nodes[linkData.target.index].name;
-  const recs = linkData.records || [];
-  const n = recs.length;
+function updateFlowDetailPanel(sel, graph) {
+    // sel kann ein einzelner Link (Objekt) oder ein Array von Links sein
+    const links = Array.isArray(sel) ? sel : [sel];
+    const multi = links.length > 1;
 
-  d3.select("#detailPanelFlow").classed("hidden", false);
-  d3.select("#detailTitleFlow").text(`${src} → ${tgt}`);
+    d3.select("#detailPanelFlow").classed("hidden", false);
 
-  if (!n) {
-    d3.select("#detailContentFlow").html(
-      "<div class='detail-value'>No records in this flow.</div>"
-    );
-    return;
-  }
+    if (!links.length) {
+        d3.select("#detailTitleFlow").text("Choose a flow");
+        d3.select("#detailContentFlow").html(
+            "<div class='detail-value'>No records in this flow.</div>"
+        );
+        return;
+    }
 
-  const avgSleep = d3.mean(recs, (d) => +d.sleepHours) || 0;
-  const avgHR = d3.mean(recs, (d) => +d.heartRate) || NaN;
-  const avgQuality = d3.mean(recs, (d) => +d.sleepQuality) || 0;
+    // Records zusammenführen
+    const allRecs = links.flatMap((l) => l.records || []);
+    const n = allRecs.length;
 
-  const clamp01 = (x) => Math.max(0, Math.min(1, x));
-  const pSleep = clamp01((avgSleep - 5) / (10 - 5));
-  const pHR = isFinite(avgHR) ? 1 - clamp01((avgHR - 50) / (100 - 50)) : 0.0;
-  const pQuality = clamp01((avgQuality - 1) / (10 - 1));
+    // Kennzahlen (gewichtete Mittel über alle Rekorde)
+    const avg = (arr, acc) => (arr.length ? d3.mean(arr, acc) : NaN);
+    const avgSleep = avg(allRecs, (d) => +d.sleepHours);
+    const avgHR = avg(allRecs, (d) => +d.heartRate);
+    const avgQuality = avg(allRecs, (d) => +d.sleepQuality);
 
-  const row = (label, val, unit, pct, color) => `
+    // Überschrift
+    if (multi) {
+        const label = `${links.length} flows selected`;
+        d3.select("#detailTitleFlow").text(label);
+    } else {
+        const src = graph.nodes[links[0].source.index].name;
+        const tgt = graph.nodes[links[0].target.index].name;
+        d3.select("#detailTitleFlow").text(`${src} → ${tgt}`);
+    }
+
+    // Balkenberechnung wie bisher
+    const clamp01 = (x) => Math.max(0, Math.min(1, x));
+    const pSleep = clamp01(((avgSleep ?? 0) - 5) / (10 - 5));
+    const pHR = Number.isFinite(avgHR) ? 1 - clamp01(((avgHR ?? 0) - 50) / (100 - 50)) : 0.0;
+    const pQuality = clamp01(((avgQuality ?? 0) - 1) / (10 - 1));
+    const row = (label, val, unit, pct, color) => `
     <div class="detail-stat">
       <div style="width:100%;">
         <div class="detail-label">${label}</div>
-        <div class="detail-value">${
-          Number.isFinite(val) ? val.toFixed(2) : "—"
-        } ${unit || ""}</div>
+        <div class="detail-value">${Number.isFinite(val) ? val.toFixed(2) : "—"} ${unit || ""}</div>
         <div class="detail-bar-container">
-          <div class="detail-bar" style="width:${(pct * 100).toFixed(
-            0
-          )}%; background:${color};"></div>
+          <div class="detail-bar" style="width:${(pct * 100).toFixed(0)}%; background:${color};"></div>
         </div>
       </div>
     </div>`;
 
-  d3.select("#detailContentFlow").html(`
+    // Vergleichstabelle bei Mehrfachauswahl
+    let tableHTML = "";
+    if (multi) {
+        tableHTML =
+            `<div class="detail-stat">
+         <div class="detail-label">Flow comparison</div>
+         <div style="overflow:auto;">
+           <table style="width:100%; border-collapse:collapse; font-size:12px;">
+             <thead>
+               <tr>
+                 <th style="text-align:left; padding:6px; border-bottom:1px solid #30363d;">Flow</th>
+                 <th style="text-align:right; padding:6px; border-bottom:1px solid #30363d;">People</th>
+                 <th style="text-align:right; padding:6px; border-bottom:1px solid #30363d;">Avg Sleep (h)</th>
+                 <th style="text-align:right; padding:6px; border-bottom:1px solid #30363d;">Avg HR (bpm)</th>
+                 <th style="text-align:right; padding:6px; border-bottom:1px solid #30363d;">Quality (/10)</th>
+               </tr>
+             </thead>
+             <tbody>` +
+            links
+                .map((l) => {
+                    const src = graph.nodes[l.source.index].name;
+                    const tgt = graph.nodes[l.target.index].name;
+                    const recs = l.records || [];
+                    const nL = recs.length;
+                    const aS = d3.mean(recs, (d) => +d.sleepHours) ?? NaN;
+                    const aH = d3.mean(recs, (d) => +d.heartRate) ?? NaN;
+                    const aQ = d3.mean(recs, (d) => +d.sleepQuality) ?? NaN;
+                    return `<tr>
+            <td style="padding:6px; border-bottom:1px solid #222">${src} → ${tgt}</td>
+            <td style="padding:6px; text-align:right; border-bottom:1px solid #222">${nL}</td>
+            <td style="padding:6px; text-align:right; border-bottom:1px solid #222">${Number.isFinite(aS) ? aS.toFixed(2) : "—"}</td>
+            <td style="padding:6px; text-align:right; border-bottom:1px solid #222">${Number.isFinite(aH) ? aH.toFixed(2) : "—"}</td>
+            <td style="padding:6px; text-align:right; border-bottom:1px solid #222">${Number.isFinite(aQ) ? aQ.toFixed(2) : "—"}</td>
+          </tr>`;
+                })
+                .join("") +
+            `</tbody></table>
+         </div>
+       </div>`;
+    }
+
+    d3.select("#detailContentFlow").html(`
     <div class="detail-stat">
       <div class="detail-label">Sample Size</div>
       <div class="detail-value">${n} people</div>
     </div>
-    <div class="detail-stat">
-      <div class="detail-label">Activity Level</div>
-      <div class="detail-value">${src}</div>
-    </div>
-    <div class="detail-stat">
-      <div class="detail-label">Sleep Quality Bucket</div>
-      <div class="detail-value">${tgt}</div>
-    </div>
     ${row("Average Sleep Duration", avgSleep, "hours", pSleep, "#51cf66")}
     ${row("Average Heart Rate", avgHR, "bpm", pHR, "#7c4dff")}
     ${row("Sleep Quality Score", avgQuality, "/ 10", pQuality, "#22b8cf")}
+    ${tableHTML}
   `);
 }
+
 
 function initDreamLab(rows) {
   const bmiNumericCol = findCol(rows.columns, CANDIDATES.bmi);
