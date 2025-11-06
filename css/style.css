@@ -889,3 +889,11 @@ body {
     }
     .sankey-legend .legend-section svg { width: 100%; }
 }
+
+#flowViz .sankey-link-flow {
+    pointer-events: none;
+    will-change: stroke-dashoffset;
+}
+@media (prefers-reduced-motion: reduce) {
+    #flowViz .sankey-link-flow { display: none; }
+}

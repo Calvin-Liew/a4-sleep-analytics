@@ -795,28 +795,37 @@ function renderSankey(graph) {
         links: graph.links.map((d) => ({ ...d })),
     });
 
-    // === Neuer: Selektion & Tooltip-Delay ===
-    let selected = new Set(); // enthält Indizes ausgewählter Links
-    let flowTtpTimer = null;
+    // Motion / Opazitäten
+    const prefersReduced =
+        typeof window !== "undefined" &&
+        window.matchMedia &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+    const BASE_LINK_OPACITY = 0.28;
+    const BASE_OUTLINE_OPACITY = 0.85;
+    const DIMMED_LINK_OPACITY = 0.08;
+    const DIMMED_OUTLINE_OPACITY = 0.15;
+
+    // ==== LINKS ====
     const gLinks = svg.append("g");
-    const gLinkOutlines = gLinks.append("g"); // Outline-Schicht
-    const gLinkColors = gLinks.append("g");   // Farbschicht oben
+    const gOutlines = gLinks.append("g");
+    const gColors = gLinks.append("g");
+    const gFlow = gLinks.append("g").attr("class", "flow-movers");
 
-    // --- Outline-Pfade (erhöht Kontrast bei Überlappungen) ---
-    const outlines = gLinkOutlines
+    // 1) Kontrast-Outline unter jedem Link (dunkel, etwas breiter)
+    const outlines = gOutlines
         .selectAll("path")
         .data(links)
         .join("path")
         .attr("class", "sankey-link-outline")
         .attr("d", d3.sankeyLinkHorizontal())
-        .attr("stroke", "#0d1117")              // dunkler Hintergrund-Ton
-        .attr("stroke-width", (d) => Math.max(1, d.width) + 4) // minimal breiter
-        .attr("stroke-opacity", 0.85)
+        .attr("stroke", "#0d1117")
+        .attr("stroke-width", (d) => Math.max(1, d.width) + 4)
+        .attr("stroke-opacity", prefersReduced ? BASE_OUTLINE_OPACITY : 0)
         .attr("fill", "none");
 
-    // --- Farbpunkte (eigentliche Links) ---
-    const paths = gLinkColors
+    // 2) Eigentliche farbige Links
+    const paths = gColors
         .selectAll("path")
         .data(links)
         .join("path")
@@ -824,35 +833,43 @@ function renderSankey(graph) {
         .attr("d", d3.sankeyLinkHorizontal())
         .attr("stroke", (d) => flowColorScale(nodes[d.source.index].name))
         .attr("stroke-width", (d) => Math.max(1, d.width))
-        .attr("stroke-opacity", 0.28)
+        .attr("stroke-opacity", prefersReduced ? BASE_LINK_OPACITY : 0)
         .attr("fill", "none")
-        .style("cursor", "pointer")
-        .on("mousemove", (ev, d) => {
-            if (flowTtpTimer) {
-                clearTimeout(flowTtpTimer);
-                flowTtpTimer = null;
-            }
-            showTooltip(ev, d, "flow");
-        })
-        .on("mouseleave", () => {
-            // Tooltip verschwindet verzögert (persistenter Effekt)
-            flowTtpTimer = setTimeout(() => hideTooltip(), 700);
-        })
-        .on("click", (ev, d) => {
-            // Toggle Auswahl
-            const idx = links.indexOf(d);
-            if (selected.has(idx)) selected.delete(idx);
-            else selected.add(idx);
+        .style("cursor", "pointer");
 
-            updateLinkAppearance();
-            // Update Detail-Panel: einzelne Auswahl ODER mehrere
-            const selLinks = Array.from(selected).map((i) => links[i]);
-            updateFlowDetailPanel(selLinks.length ? selLinks : d, { nodes, links });
+    // 3) Ruhiger, kontinuierlicher Flow-Overlay (heller, gestrichelt, animierter dashoffset)
+    const overlays = gFlow
+        .selectAll("path")
+        .data(
+            links.map((l) => {
+                const speed = 24 + Math.min(36, l.width * 2.2); // px/s, dezent variieren
+                return { ...l, __speed: speed };
+            })
+        )
+        .join("path")
+        .attr("class", "sankey-link-flow")
+        .attr("d", d3.sankeyLinkHorizontal())
+        .attr("stroke", (d) => {
+            const c = d3.color(flowColorScale(nodes[d.source.index].name));
+            return c ? c.brighter(1.2).formatHex() : "#cbd3eb";
+        })
+        .attr("stroke-width", (d) => Math.max(1, d.width))
+        .attr("stroke-linecap", "round")
+        .attr("fill", "none")
+        .attr("stroke-opacity", prefersReduced ? 0 : 0.32)
+        .attr("stroke-dasharray", "10 16")
+        .attr("stroke-dashoffset", 0)
+        .style("pointer-events", "none");
 
-            ev.stopPropagation();
+    if (!prefersReduced) {
+        const t0 = performance.now();
+        d3.timer((now) => {
+            const dt = (now - t0) / 1000;
+            overlays.attr("stroke-dashoffset", (d) => -(dt * d.__speed));
         });
+    }
 
-    // Knoten & Labels (unverändert)
+    // ==== KNOTEN ====
     svg
         .append("g")
         .selectAll("rect")
@@ -863,8 +880,10 @@ function renderSankey(graph) {
         .attr("width", (d) => d.x1 - d.x0)
         .attr("height", (d) => d.y1 - d.y0)
         .attr("fill", (d) => d3.color(flowColorScale(d.name)))
-        .attr("stroke", (d) => d3.color(flowColorScale(d.name)).darker(0.7));
+        .attr("stroke", (d) => d3.color(flowColorScale(d.name)).darker(0.7))
+        .attr("opacity", prefersReduced ? 1 : 0);
 
+    // Labels
     svg
         .append("g")
         .style("font", "12px DM Sans, system-ui, sans-serif")
@@ -876,8 +895,10 @@ function renderSankey(graph) {
         .attr("dy", "0.35em")
         .attr("text-anchor", (d) => (d.x0 < width / 2 ? "start" : "end"))
         .attr("fill", "#cbd3eb")
-        .text((d) => `${d.name} (${d.value})`);
+        .text((d) => `${d.name} (${d.value})`)
+        .attr("opacity", prefersReduced ? 1 : 0);
 
+    // Rahmen
     svg
         .append("rect")
         .attr("x", 8)
@@ -888,44 +909,146 @@ function renderSankey(graph) {
         .attr("fill", "none")
         .attr("stroke", "#30363d");
 
-    // Klick auf freie Fläche: Auswahl zurücksetzen
-    svg.on("click", () => {
-        if (selected.size) {
-            selected.clear();
-            updateLinkAppearance();
+    // ==== Sanfter Einstieg (Links zeichnen sich von links → rechts)
+    if (!prefersReduced) {
+        const ease = d3.easeCubicInOut;
+
+        paths
+            .each(function () {
+                const L = this.getTotalLength();
+                d3.select(this)
+                    .attr("stroke-dasharray", `${L} ${L}`)
+                    .attr("stroke-dashoffset", L);
+            })
+            .transition()
+            .delay((d) => 120 + (d.source.x0 / width) * 420)
+            .duration((d) => 900 + Math.min(600, d.width * 6))
+            .ease(ease)
+            .attr("stroke-dashoffset", 0)
+            .attr("stroke-opacity", BASE_LINK_OPACITY);
+
+        outlines
+            .each(function () {
+                const L = this.getTotalLength ? this.getTotalLength() : 0;
+                if (L) d3.select(this).attr("stroke-dasharray", `${L} ${L}`).attr("stroke-dashoffset", L);
+            })
+            .transition()
+            .delay((d) => 160 + (d.source.x0 / width) * 480)
+            .duration(1000)
+            .ease(ease)
+            .attr("stroke-dashoffset", 0)
+            .attr("stroke-opacity", BASE_OUTLINE_OPACITY);
+
+        svg
+            .selectAll("rect")
+            .transition()
+            .delay(80)
+            .duration(480)
+            .ease(ease)
+            .attr("opacity", 1);
+
+        svg
+            .selectAll("text")
+            .transition()
+            .delay(220)
+            .duration(480)
+            .ease(ease)
+            .attr("opacity", 1);
+    }
+
+    let tooltipTimer = null;
+
+    // 👉 NEU: Set für Mehrfachauswahl
+    const selectedLinks = new Set();
+
+    // 👉 NEU: Helper zum Redraw je nach Auswahl
+    function redrawSelection() {
+        const hasSel = selectedLinks.size > 0;
+
+        if (!hasSel) {
+            paths.attr("stroke-opacity", BASE_LINK_OPACITY);
+            outlines.attr("stroke-opacity", BASE_OUTLINE_OPACITY);
+
             d3.select("#detailPanelFlow")
                 .classed("hidden", true)
                 .select("#detailTitleFlow")
                 .text("Select an element to see details");
             d3.select("#detailContentFlow").html("");
+            return;
         }
+
+        // alles dimmen …
+        paths.attr("stroke-opacity", DIMMED_LINK_OPACITY);
+        outlines.attr("stroke-opacity", DIMMED_OUTLINE_OPACITY);
+
+        // … selektierte hervorheben
+        paths.filter((l) => selectedLinks.has(l)).attr("stroke-opacity", 0.9);
+        outlines.filter((l) => selectedLinks.has(l)).attr("stroke-opacity", 0.95);
+
+        // Detailpanel mit ALLEN selektierten Flows füttern
+        updateFlowDetailPanel(Array.from(selectedLinks), { nodes, links });
+    }
+
+    paths
+        .on("mousemove", (ev, d) => {
+            if (tooltipTimer) {
+                clearTimeout(tooltipTimer);
+                tooltipTimer = null;
+            }
+            showTooltip(ev, d, "flow");
+        })
+        .on("mouseleave", () => {
+            tooltipTimer = setTimeout(() => hideTooltip(), 700);
+        })
+        .on("click", (ev, d) => {
+            ev.stopPropagation();
+
+
+                // Mehrfachauswahl togglen
+                if (selectedLinks.has(d)) {
+                    selectedLinks.delete(d);
+                } else {
+                    selectedLinks.add(d);
+                }
+
+
+            redrawSelection();
+        });
+
+    // Klick auf freie Fläche: Auswahl zurücksetzen
+    svg.on("click", () => {
+        selectedLinks.clear();
+        redrawSelection();
     });
 
+    // Detailpanel initial zurücksetzen
     d3.select("#detailPanelFlow")
         .classed("hidden", true)
         .select("#detailTitleFlow")
         .text("Select an element to see details");
     d3.select("#detailContentFlow").html("");
 
-    // --- Aussehen abhängig von Auswahl-Zustand (inkl. Transition) ---
-    function updateLinkAppearance() {
-        const hasSel = selected.size > 0;
+    // Klick auf freie Fläche: Auswahl zurücksetzen
+    svg.on("click", () => {
+        paths.attr("stroke-opacity", BASE_LINK_OPACITY);
+        outlines.attr("stroke-opacity", BASE_OUTLINE_OPACITY);
 
-        outlines
-            .transition()
-            .duration(250)
-            .attr("stroke-opacity", (d, i) =>
-                hasSel ? (selected.has(i) ? 0.95 : 0.15) : 0.85
-            );
+        d3.select("#detailPanelFlow")
+            .classed("hidden", true)
+            .select("#detailTitleFlow")
+            .text("Select an element to see details");
+        d3.select("#detailContentFlow").html("");
+    });
 
-        paths
-            .transition()
-            .duration(250)
-            .attr("stroke-opacity", (d, i) =>
-                hasSel ? (selected.has(i) ? 0.9 : 0.08) : 0.28
-            );
-    }
+    // Detailpanel initial zurücksetzen
+    d3.select("#detailPanelFlow")
+        .classed("hidden", true)
+        .select("#detailTitleFlow")
+        .text("Select an element to see details");
+    d3.select("#detailContentFlow").html("");
 }
+
+
 
 function updateFlowDetailPanel(sel, graph) {
     // sel kann ein einzelner Link (Objekt) oder ein Array von Links sein
