@@ -1974,17 +1974,14 @@ function initDreamLab(rows) {
     .domain([64, Math.max(hrExtent[1], 65)])
     .range([innerHeight, 0]);
 
-    g.append("g")
-        .attr("class", "dl-axis-x")
-        .attr("transform", `translate(0,${innerHeight})`)
-        .call(d3.axisBottom(x));
+  g.append("g")
+    .attr("class", "dl-axis-x")
+    .attr("transform", `translate(0,${innerHeight})`)
+    .call(d3.axisBottom(x));
 
-    g.append("g")
-        .attr("class", "dl-axis-y")
-        .call(d3.axisLeft(y).ticks(8));
+  g.append("g").attr("class", "dl-axis-y").call(d3.axisLeft(y).ticks(8));
 
-
-    g.append("text")
+  g.append("text")
     .attr("class", "dl-axis-label")
     .attr("x", innerWidth / 2)
     .attr("y", innerHeight + 40)
@@ -2116,32 +2113,27 @@ function initDreamLab(rows) {
     });
     return set;
   }
-    function applyFilter() {
-        const dname = disSel ? disSel.value : "__ALL__";
-        const cats = selectedCategories();
+  function applyFilter() {
+    const dname = disSel ? disSel.value : "__ALL__";
+    const cats = selectedCategories();
 
-        // Read HR min/max from controls; fall back to full extent if empty
-        const hrMinRaw = hrMinEl ? +hrMinEl.value : hrExtent[0];
-        const hrMaxRaw = hrMaxEl ? +hrMaxEl.value : hrExtent[1];
-        const newMin = Math.min(hrMinRaw, hrMaxRaw);
-        const newMax = Math.max(hrMinRaw, hrMaxRaw);
+    const hrMinRaw = hrMinEl ? +hrMinEl.value : hrExtent[0];
+    const hrMaxRaw = hrMaxEl ? +hrMaxEl.value : hrExtent[1];
+    const newMin = Math.min(hrMinRaw, hrMaxRaw);
+    const newMax = Math.max(hrMinRaw, hrMaxRaw);
 
-        // Filter by disorder, BMI category, and heart rate range
-        filtered = data.filter((d) => {
-            const okDis = dname === "__ALL__" ? true : d.disorder === dname;
-            const okCat = cats ? cats.has(d.cat) : true;
-            const okHr = d.hr >= newMin && d.hr <= newMax;
-            return okDis && okCat && okHr;
-        });
+    filtered = data.filter((d) => {
+      const okDis = dname === "__ALL__" ? true : d.disorder === dname;
+      const okCat = cats ? cats.has(d.cat) : true;
+      const okHr = d.hr >= newMin && d.hr <= newMax;
+      return okDis && okCat && okHr;
+    });
 
-        // Dynamically update Y scale domain and redraw the Y axis
-        y.domain([newMin, newMax]);
-        g.select(".dl-axis-y").call(d3.axisLeft(y).ticks(8));
+    y.domain([newMin, newMax]);
+    g.select(".dl-axis-y").call(d3.axisLeft(y).ticks(8));
 
-        // Redraw static layers that depend on y()
-        redrawStatic();
-    }
-
+    redrawStatic();
+  }
 
   function drawDensity(t = 0) {
     densityG.selectAll("*").remove();
