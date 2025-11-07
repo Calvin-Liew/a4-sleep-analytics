@@ -643,7 +643,7 @@ function updateDreamLabKeyInsight() {
 
   if (!hrCol || !disCol) {
     d3.select("#keyInsightDreamLab").html(
-      "<strong>Key Insight:</strong> Loading analysis..."
+      "<strong>Key Insight:</strong> Most people are in the “no sleep disorder” group and sit in the Normal BMI band with the lowest heart rates (typical ~68–70 bpm). Insomnia makes up about a quarter of the sample and spreads across Normal/Overweight; their heart rate is ~3–5 bpm higher on average than the “none” group in the same BMI band. Sleep apnea is the smallest group (roughly one in ten) but it clusters in Obese BMI and shows the highest heart rates—often 10+ bpm above the “none” group. Put simply: heart rate rises with BMI, but disorder status is the stronger separator—the high-BMI + high-HR corner is dominated by apnea, a combination that stands out as a practical screening flag."
     );
     return;
   }
@@ -1974,14 +1974,17 @@ function initDreamLab(rows) {
     .domain([64, Math.max(hrExtent[1], 65)])
     .range([innerHeight, 0]);
 
-  g.append("g")
-    .attr("class", "dl-axis")
-    .attr("transform", `translate(0,${innerHeight})`)
-    .call(d3.axisBottom(x));
+    g.append("g")
+        .attr("class", "dl-axis-x")
+        .attr("transform", `translate(0,${innerHeight})`)
+        .call(d3.axisBottom(x));
 
-  g.append("g").attr("class", "dl-axis").call(d3.axisLeft(y).ticks(8));
+    g.append("g")
+        .attr("class", "dl-axis-y")
+        .call(d3.axisLeft(y).ticks(8));
 
-  g.append("text")
+
+    g.append("text")
     .attr("class", "dl-axis-label")
     .attr("x", innerWidth / 2)
     .attr("y", innerHeight + 40)
@@ -2021,9 +2024,6 @@ function initDreamLab(rows) {
     ["None", "#8b949e"],
     ["Insomnia", "#7c4dff"],
     ["Sleep Apnea", "#f85149"],
-    ["Narcolepsy", "#ffd43b"],
-    ["Restless Leg Syndrome", "#3fb950"],
-    ["Unknown", "#58a6ff"],
   ]);
   const color = (d) => colorLut.get(d) || "#58a6ff";
 
@@ -2116,21 +2116,32 @@ function initDreamLab(rows) {
     });
     return set;
   }
-  function applyFilter() {
-    const dname = disSel ? disSel.value : "__ALL__";
-    const hrMin = +hrMinEl?.value || 0;
-    const hrMax = +hrMaxEl?.value || 999;
-    const cats = selectedCategories();
+    function applyFilter() {
+        const dname = disSel ? disSel.value : "__ALL__";
+        const cats = selectedCategories();
 
-    filtered = data.filter((d) => {
-      const okDis = dname === "__ALL__" ? true : d.disorder === dname;
-      const okCat = cats ? cats.has(d.cat) : true;
-      const okHr = d.hr >= hrMin && d.hr <= hrMax;
-      return okDis && okCat && okHr;
-    });
+        // Read HR min/max from controls; fall back to full extent if empty
+        const hrMinRaw = hrMinEl ? +hrMinEl.value : hrExtent[0];
+        const hrMaxRaw = hrMaxEl ? +hrMaxEl.value : hrExtent[1];
+        const newMin = Math.min(hrMinRaw, hrMaxRaw);
+        const newMax = Math.max(hrMinRaw, hrMaxRaw);
 
-    redrawStatic();
-  }
+        // Filter by disorder, BMI category, and heart rate range
+        filtered = data.filter((d) => {
+            const okDis = dname === "__ALL__" ? true : d.disorder === dname;
+            const okCat = cats ? cats.has(d.cat) : true;
+            const okHr = d.hr >= newMin && d.hr <= newMax;
+            return okDis && okCat && okHr;
+        });
+
+        // Dynamically update Y scale domain and redraw the Y axis
+        y.domain([newMin, newMax]);
+        g.select(".dl-axis-y").call(d3.axisLeft(y).ticks(8));
+
+        // Redraw static layers that depend on y()
+        redrawStatic();
+    }
+
 
   function drawDensity(t = 0) {
     densityG.selectAll("*").remove();
@@ -2155,8 +2166,6 @@ function initDreamLab(rows) {
     const s = d.toLowerCase();
     if (s.includes("insomnia")) return "insomnia";
     if (s.includes("apnea")) return "apnea";
-    if (s.includes("narco")) return "narco";
-    if (s.includes("restless")) return "rls";
     if (s.includes("none")) return "none";
     return "";
   }
