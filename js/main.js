@@ -643,7 +643,7 @@ function updateDreamLabKeyInsight() {
 
   if (!hrCol || !disCol) {
     d3.select("#keyInsightDreamLab").html(
-      "<strong>Key Insight:</strong> Most people are in the “no sleep disorder” group and sit in the Normal BMI band with the lowest heart rates (typical ~68–70 bpm). Insomnia makes up about a quarter of the sample and spreads across Normal/Overweight; their heart rate is ~3–5 bpm higher on average than the “none” group in the same BMI band. Sleep apnea is the smallest group (roughly one in ten) but it clusters in Obese BMI and shows the highest heart rates—often 10+ bpm above the “none” group. Put simply: heart rate rises with BMI, but disorder status is the stronger separator—the high-BMI + high-HR corner is dominated by apnea, a combination that stands out as a practical screening flag."
+      "<strong>Key Insight:</strong> Most people are in the no sleep disorder group and sit in the Normal BMI band with the lowest heart rates, typically 68 to 70 bpm. Insomnia makes up about a quarter of the sample and spreads across Normal and Overweight categories; their heart rate is 3 to 5 bpm higher on average than the none group in the same BMI band. Sleep apnea is the smallest group, roughly one in ten, but it clusters in Obese BMI and shows the highest heart rates, often 10 or more bpm above the none group. Put simply: heart rate rises with BMI, but disorder status is the stronger separator. The high BMI plus high heart rate corner is dominated by apnea, a combination that stands out as a practical screening flag."
     );
     return;
   }
